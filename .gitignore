@@ -1,0 +1,19 @@
+# Gradle / Android 建置產物
+.gradle/
+.kotlin/
+build/
+app/build/
+local.properties
+*.apk
+*.aab
+*.keystore
+captures/
+
+# 編輯器
+.idea/
+.vscode/
+*.iml
+
+# 系統
+.DS_Store
+Thumbs.db
