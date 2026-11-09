@@ -1,6 +1,10 @@
 package com.haohao.inkjournal.ui
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -79,9 +83,9 @@ val INK_SWATCHES = listOf(
 fun SectionTitle(text: String) {
     Text(
         text,
-        style = MaterialTheme.typography.titleSmall,
-        color = Ink.Accent,
-        modifier = Modifier.padding(top = 20.dp, bottom = 8.dp),
+        style = MaterialTheme.typography.labelLarge,
+        color = Ink.Muted,
+        modifier = Modifier.padding(start = 4.dp, top = 24.dp, bottom = 10.dp),
     )
 }
 
@@ -90,38 +94,45 @@ fun Hint(text: String, modifier: Modifier = Modifier) {
     Text(text, style = MaterialTheme.typography.bodySmall, color = Ink.Muted, modifier = modifier)
 }
 
-/** 顏色圓點；selected 時外面加一圈。 */
+/** 顏色圓點；選到的那個外面有一圈（中間留一點空隙）。 */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ColorDot(color: Int, selected: Boolean, size: Dp = 26.dp, onClick: () -> Unit, onLongClick: (() -> Unit)? = null) {
+    val ring by animateColorAsState(if (selected) Ink.Text.copy(alpha = 0.9f) else Color.Transparent, label = "ring")
+    val inner by animateDpAsState(if (selected) size - 6.dp else size, label = "inner")
     Box(
         Modifier
-            .size(size + 12.dp)
+            .size(size + 14.dp)
             .clip(CircleShape)
-            .then(if (selected) Modifier.border(2.dp, Ink.Accent, CircleShape) else Modifier)
-            .pointerInput(onClick, onLongClick) {
-                detectTapGestures(onTap = { onClick() }, onLongPress = onLongClick?.let { l -> { _: Offset -> l() } })
-            },
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
         contentAlignment = Alignment.Center,
     ) {
-        Box(Modifier.size(size).clip(CircleShape).background(Color(color)))
+        Box(Modifier.size(size).border(2.dp, ring, CircleShape))
+        Box(
+            Modifier
+                .size(inner)
+                .clip(CircleShape)
+                .background(Color(color))
+                .border(1.dp, Color(0x1AFFFFFF), CircleShape),
+        )
     }
 }
 
-/** 粗細按鈕：圓點大小跟筆的粗細成比例。 */
+/** 粗細按鈕：圓點大小跟筆的粗細成比例；選到的那個底下有一塊淡淡的圓。 */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SizeDot(sizeMm: Float, color: Int, selected: Boolean, onClick: () -> Unit, onLongClick: (() -> Unit)? = null) {
-    val d = (4f + sizeMm * 9f).coerceIn(4f, 26f).dp
+    val d = (3f + sizeMm * 10f).coerceIn(4f, 24f).dp
+    val bg by animateColorAsState(if (selected) Color(0x1FFFFFFF) else Color.Transparent, label = "sizeBg")
     Box(
         Modifier
-            .size(38.dp)
+            .size(40.dp)
             .clip(CircleShape)
-            .then(if (selected) Modifier.background(Ink.Surface3).border(2.dp, Ink.Accent, CircleShape) else Modifier)
-            .pointerInput(onClick, onLongClick) {
-                detectTapGestures(onTap = { onClick() }, onLongPress = onLongClick?.let { l -> { _: Offset -> l() } })
-            },
+            .background(bg)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
         contentAlignment = Alignment.Center,
     ) {
-        Box(Modifier.size(d).clip(CircleShape).background(Color(color)))
+        Box(Modifier.size(d).clip(CircleShape).background(Color(color).copy(alpha = if (selected) 1f else 0.75f)))
     }
 }
 

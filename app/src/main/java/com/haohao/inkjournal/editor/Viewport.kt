@@ -17,6 +17,11 @@ class Viewport(private val sideMarginPx: Float) {
     var zoom = 1f; private set
     var tx = 0f; private set
     var ty = 0f; private set
+
+    /** 上下被浮動工具列、系統列蓋住的高度（px）。頁面可以捲到底下，但捲到最頂/最底時會停在這些範圍外。 */
+    var insetTop = 0f; private set
+    var insetBottom = 0f; private set
+
     var pageCount = 1
         set(value) {
             field = value.coerceAtLeast(1)
@@ -42,10 +47,19 @@ class Viewport(private val sideMarginPx: Float) {
     fun setSize(w: Float, h: Float) {
         if (w <= 0f || h <= 0f) return
         val hadSize = hasSize
-        val docTop = if (hadSize) -ty / scale else 0f
+        val docTop = if (hadSize) docTopMm() else 0f
         viewW = w
         viewH = h
-        ty = -docTop * scale
+        ty = insetTop - docTop * scale
+        clamp()
+    }
+
+    fun setInsets(top: Float, bottom: Float) {
+        if (top == insetTop && bottom == insetBottom) return
+        val docTop = docTopMm()
+        insetTop = top
+        insetBottom = bottom
+        if (hasSize) ty = insetTop - docTop * scale
         clamp()
     }
 
@@ -67,14 +81,14 @@ class Viewport(private val sideMarginPx: Float) {
     fun resetZoom(fx: Float, fy: Float) = zoomBy(1f / zoom, fx, fy)
 
     fun scrollToPage(i: Int) {
-        ty = -(pageTopMm(i.coerceIn(0, pageCount - 1)) - TOP_MM) * scale
+        ty = insetTop - (pageTopMm(i.coerceIn(0, pageCount - 1)) - TOP_MM) * scale
         clamp()
     }
 
-    /** 畫面中央那一頁。 */
+    /** 沒被工具列蓋住的範圍中央那一頁。 */
     fun currentPage(): Int {
         if (!hasSize) return 0
-        val docY = (viewH / 2f - ty) / scale
+        val docY = ((insetTop + viewH - insetBottom) / 2f - ty) / scale
         val stride = PageSpec.HEIGHT_MM + GAP_MM
         return floor((docY - TOP_MM + GAP_MM / 2f) / stride).toInt().coerceIn(0, pageCount - 1)
     }
@@ -121,11 +135,12 @@ class Viewport(private val sideMarginPx: Float) {
     /** 把 ty 設成某個值（還原上次位置用）。 */
     fun restore(zoom: Float, docTopMm: Float) {
         this.zoom = zoom.coerceIn(MIN_ZOOM, MAX_ZOOM)
-        ty = -docTopMm * scale
+        ty = insetTop - docTopMm * scale
         clamp()
     }
 
-    fun docTopMm(): Float = if (hasSize) -ty / scale else 0f
+    /** 工具列下緣對到的文件位置（mm）。 */
+    fun docTopMm(): Float = if (hasSize) (insetTop - ty) / scale else 0f
 
     private fun clamp() {
         if (!hasSize) return
@@ -137,7 +152,8 @@ class Viewport(private val sideMarginPx: Float) {
             tx.coerceIn(viewW - contentW - sideMarginPx, sideMarginPx)
         }
         val contentH = docHeightMm * s
-        ty = if (contentH <= viewH) 0f else ty.coerceIn(viewH - contentH, 0f)
+        val avail = viewH - insetTop - insetBottom
+        ty = if (contentH <= avail) insetTop else ty.coerceIn(viewH - insetBottom - contentH, insetTop)
     }
 
     companion object {

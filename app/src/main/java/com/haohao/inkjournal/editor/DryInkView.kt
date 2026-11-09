@@ -3,7 +3,6 @@ package com.haohao.inkjournal.editor
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Canvas
-import android.graphics.DashPathEffect
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.RenderNode
@@ -51,14 +50,14 @@ class DryInkView(
         color = PagePainter.PAGE_EDGE
         strokeWidth = density
     }
-    private val buttonPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+    private val buttonPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x0FFFFFFF }
+    private val buttonEdge = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
-        color = PagePainter.MUTED
-        strokeWidth = 1.5f * density
-        pathEffect = DashPathEffect(floatArrayOf(6f * density, 5f * density), 0f)
+        color = 0x14FFFFFF
+        strokeWidth = density
     }
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = PagePainter.MUTED
+        color = 0xFFDDBB8E.toInt()
         textAlign = Paint.Align.CENTER
     }
     private val eraserStroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -147,7 +146,8 @@ class DryInkView(
             val top = viewport.pageTopPx(i)
             val right = left + PageSpec.WIDTH_MM * s
             val bottom = top + PageSpec.HEIGHT_MM * s
-            canvas.drawRect(left, top, right, bottom, pagePaint)
+            val corner = 4f * density
+            canvas.drawRoundRect(left, top, right, bottom, corner, corner, pagePaint)
             PagePainter.drawBackground(canvas, left, top, s, settings, visTop = 0f, visBottom = h)
 
             canvas.save()
@@ -172,7 +172,7 @@ class DryInkView(
                 for (r in page.strokes) InkConvert.inkOf(r)?.let { renderer.draw(canvas, it, tmpMatrix) }
             }
             canvas.restore()
-            canvas.drawRect(left, top, right, bottom, edgePaint)
+            canvas.drawRoundRect(left, top, right, bottom, corner, corner, edgePaint)
         }
 
         drawAddPageButton(canvas, s)
@@ -222,11 +222,12 @@ class DryInkView(
         val rr = viewport.tx + r[2] * s
         val b = viewport.ty + r[3] * s
         if (b < 0f || t > height) return
-        val radius = 3f * s
+        val radius = (b - t) / 2f
         canvas.drawRoundRect(l, t, rr, b, radius, radius, buttonPaint)
+        canvas.drawRoundRect(l, t, rr, b, radius, radius, buttonEdge)
         textPaint.textSize = (6f * s).coerceIn(13f * density, 30f * density)
         val cy = (t + b) / 2f - (textPaint.descent() + textPaint.ascent()) / 2f
-        canvas.drawText("＋ 新增一頁", (l + rr) / 2f, cy, textPaint)
+        canvas.drawText("＋  新增一頁", (l + rr) / 2f, cy, textPaint)
     }
 
     // ---------------- 背景建立 Ink 筆劃 ----------------

@@ -1,10 +1,14 @@
 package com.haohao.inkjournal.ui
 
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.addPathNodes
 import androidx.compose.ui.unit.dp
@@ -13,12 +17,20 @@ import com.haohao.inkjournal.editor.PagePainter
 object Ink {
     val Bg = Color(PagePainter.APP_BG)
     val Page = Color(PagePainter.PAGE)
+    /** 卡片、設定區塊 */
+    val Card = Color(0xFF181B20)
     val Bar = Color(0xFF16191D)
     val Surface2 = Color(0xFF1F2328)
-    val Surface3 = Color(0xFF272B31)
-    val Text = Color(0xFFE7E2D9)
-    val Muted = Color(PagePainter.MUTED)
-    val Accent = Color(0xFFD9B88F)
+    val Surface3 = Color(0xFF2A2E35)
+    /** 浮在紙面上的工具列（略透明） */
+    val Glass = Color(0xF21D2026)
+    /** 細邊框：白色 8% */
+    val Hairline = Color(0x14FFFFFF)
+    val Text = Color(0xFFEDE8DF)
+    val Muted = Color(0xFF8D939C)
+    val Faint = Color(0xFF5E646D)
+    val Accent = Color(0xFFDDBB8E)
+    val AccentSoft = Color(0x24DDBB8E)
     val Outline = Color(0xFF30353D)
     val Danger = Color(0xFFE88A80)
 }
@@ -30,6 +42,8 @@ private val scheme = darkColorScheme(
     onPrimaryContainer = Ink.Accent,
     secondary = Color(0xFF9DB7D6),
     onSecondary = Color(0xFF13202E),
+    secondaryContainer = Color(0xFF3A3226),
+    onSecondaryContainer = Ink.Accent,
     background = Ink.Bg,
     onBackground = Ink.Text,
     surface = Ink.Bar,
@@ -37,7 +51,7 @@ private val scheme = darkColorScheme(
     surfaceVariant = Ink.Surface2,
     onSurfaceVariant = Ink.Muted,
     surfaceContainerLowest = Ink.Bg,
-    surfaceContainerLow = Ink.Bar,
+    surfaceContainerLow = Ink.Card,
     surfaceContainer = Ink.Surface2,
     surfaceContainerHigh = Ink.Surface2,
     surfaceContainerHighest = Ink.Surface3,
@@ -46,36 +60,76 @@ private val scheme = darkColorScheme(
     error = Ink.Danger,
 )
 
+private val shapes = Shapes(
+    extraSmall = RoundedCornerShape(8.dp),
+    small = RoundedCornerShape(12.dp),
+    medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(24.dp),
+    extraLarge = RoundedCornerShape(28.dp),
+)
+
 @Composable
 fun InkJournalTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = scheme, content = content)
+    MaterialTheme(colorScheme = scheme, shapes = shapes, content = content)
 }
 
-/** 幾個 material-icons-core 沒有的圖示。 */
+/** 細線條、圓角收尾的圖示（24×24，線寬 1.8）。 */
 object InkIcons {
     private fun icon(name: String, vararg paths: String): ImageVector =
         ImageVector.Builder(name, 24.dp, 24.dp, 24f, 24f).apply {
-            for (p in paths) addPath(pathData = addPathNodes(p), fill = SolidColor(Color.Black))
+            for (p in paths) {
+                addPath(
+                    pathData = addPathNodes(p),
+                    fill = null,
+                    stroke = SolidColor(Color.Black),
+                    strokeLineWidth = 1.8f,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                )
+            }
         }.build()
 
+    val Back = icon("Back", "M15 18 L9 12 L15 6")
     val Undo = icon(
         "Undo",
-        "M12.5,8c-2.65,0 -5.05,0.99 -6.9,2.6L2,7v9h9l-3.62,-3.62c1.39,-1.16 3.16,-1.88 5.12,-1.88 3.54,0 6.55,2.31 7.6,5.5l2.37,-0.78C21.08,11.03 17.15,8 12.5,8z",
+        "M9 14 L4 9 L9 4",
+        "M4 9 H14.5 A5.5 5.5 0 0 1 20 14.5 A5.5 5.5 0 0 1 14.5 20 H11",
     )
     val Redo = icon(
         "Redo",
-        "M18.4,10.6C16.55,8.99 14.15,8 11.5,8c-4.65,0 -8.58,3.03 -9.96,7.22L3.9,16c1.05,-3.19 4.05,-5.5 7.6,-5.5 1.95,0 3.73,0.72 5.12,1.88L13,16h9V7l-3.6,3.6z",
-    )
-    val Tune = icon(
-        "Tune",
-        "M3,17v2h6v-2H3zM3,5v2h10V5H3zM13,21v-2h8v-2h-8v-2h-2v6h2zM7,9v2H3v2h4v2h2V9H7zM21,13v-2H11v2h10zM15,9h2V7h4V5h-4V3h-2v6z",
+        "M15 14 L20 9 L15 4",
+        "M20 9 H9.5 A5.5 5.5 0 0 0 4 14.5 A5.5 5.5 0 0 0 9.5 20 H13",
     )
     val Eraser = icon(
         "Eraser",
-        "M16.24,3.56L21.19,8.5C21.97,9.29 21.97,10.55 21.19,11.34L12,20.53C10.44,22.09 7.91,22.09 6.34,20.53L2.81,17C2.03,16.21 2.03,14.95 2.81,14.16L13.41,3.56C14.2,2.78 15.46,2.78 16.24,3.56M4.22,15.58L7.76,19.11C8.54,19.9 9.8,19.9 10.59,19.11L14.12,15.58L9.17,10.63L4.22,15.58Z",
+        "M7 21 L2.7 16.7 C1.7 15.7 1.7 14.2 2.7 13.3 L12.3 3.7 C13.3 2.7 14.8 2.7 15.7 3.7 L21.3 9.3 C22.3 10.3 22.3 11.8 21.3 12.7 L13 21",
+        "M22 21 H7",
+        "M5 11 L14 20",
     )
     val AddPage = icon(
         "AddPage",
-        "M14,2H6C4.9,2 4,2.9 4,4v16c0,1.1 0.89,2 1.99,2H18c1.1,0 2,-0.9 2,-2V8l-6,-6zM18,20H6V4h7v5h5v11zM11,11v3H8v2h3v3h2v-3h3v-2h-3v-3h-2z",
+        "M15 2 H6 A2 2 0 0 0 4 4 V20 A2 2 0 0 0 6 22 H18 A2 2 0 0 0 20 20 V7 Z",
+        "M14 2 V6 A2 2 0 0 0 16 8 H20",
+        "M9 15 H15",
+        "M12 18 V12",
+    )
+    val Tune = icon(
+        "Tune",
+        "M20 7 H11",
+        "M14 17 H5",
+        "M20 17 A3 3 0 1 1 14 17 A3 3 0 1 1 20 17 Z",
+        "M10 7 A3 3 0 1 1 4 7 A3 3 0 1 1 10 7 Z",
+    )
+    val Plus = icon("Plus", "M12 5 V19", "M5 12 H19")
+    val Pencil = icon(
+        "Pencil",
+        "M16.5 3.5 A2.12 2.12 0 0 1 19.5 6.5 L7 19 L3 20 L4 16 Z",
+        "M14.5 5.5 L18.5 9.5",
+    )
+    val Trash = icon(
+        "Trash",
+        "M3 6 H21",
+        "M19 6 V20 A2 2 0 0 1 17 22 H7 A2 2 0 0 1 5 20 V6",
+        "M8 6 V4 A2 2 0 0 1 10 2 H14 A2 2 0 0 1 16 4 V6",
     )
 }

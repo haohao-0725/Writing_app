@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Matrix
 import android.graphics.Path
+import android.graphics.RectF
 import android.os.SystemClock
 import android.view.MotionEvent
 import android.view.VelocityTracker
@@ -125,6 +126,27 @@ class NoteCanvasView(
         viewportChanged()
     }
 
+    /** 浮動工具列蓋住的上下高度（px）。 */
+    fun setInsets(top: Float, bottom: Float) {
+        if (top == viewport.insetTop && bottom == viewport.insetBottom) return
+        viewport.setInsets(top, bottom)
+        if (viewport.hasSize) viewportChanged()
+    }
+
+    private val overlays = HashMap<String, RectF>()
+
+    /** 浮在畫布上的介面（工具列、頁碼）位置，畫布座標。正在寫的筆跡經過這些地方時會被藏起來。 */
+    fun setOverlay(key: String, rect: RectF?) {
+        val old = overlays[key]
+        if (rect == null) {
+            if (overlays.remove(key) == null) return
+        } else {
+            if (old == rect) return
+            overlays[key] = RectF(rect)
+        }
+        if (penPointerId == NONE) updateWetMask()
+    }
+
     private fun viewportChanged() {
         session.updateCurrentPage(viewport.currentPage())
         if (penPointerId == NONE) updateWetMask()
@@ -143,6 +165,11 @@ class NoteCanvasView(
             pages.addRect(l, t, l + PageSpec.WIDTH_MM * s, t + PageSpec.HEIGHT_MM * s, Path.Direction.CW)
         }
         mask.op(pages, Path.Op.DIFFERENCE)
+        if (overlays.isNotEmpty()) {
+            val over = Path()
+            for (r in overlays.values) over.addRoundRect(r, OVERLAY_RADIUS * density, OVERLAY_RADIUS * density, Path.Direction.CW)
+            mask.op(over, Path.Op.UNION)
+        }
         wet.maskPath = mask
     }
 
@@ -550,6 +577,7 @@ class NoteCanvasView(
         private const val PALM_GUARD_MS = 450L
         private const val TAP_MAX_MS = 300L
         private const val ERASER_RADIUS_DP = 12f
+        private const val OVERLAY_RADIUS = 26f
 
         // 舊款 Samsung 裝置按住 S Pen 側鍵時會送出自己的動作代碼
         private const val SAMSUNG_PEN_DOWN = 211
